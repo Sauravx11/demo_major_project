@@ -6,10 +6,12 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Sidebar() {
   const { user, logoutUser, isTeacher } = useAuth();
   const { collapsed, mobileOpen, toggle } = useSidebar();
+  const { isDark, toggleTheme } = useTheme();
   const initial = user?.name?.charAt(0)?.toUpperCase() || 'U';
 
   const sidebarClass = [
@@ -20,21 +22,21 @@ export default function Sidebar() {
 
   const teacherLinks = [
     { section: 'Overview' },
-    { to: '/dashboard',     icon: '📊', label: 'Dashboard' },
+    { to: '/dashboard', icon: '📊', label: 'Dashboard' },
     { section: 'Management' },
-    { to: '/students',      icon: '👥', label: 'Students' },
-    { to: '/upload',        icon: '📁', label: 'Upload CSV' },
+    { to: '/students', icon: '👥', label: 'Students' },
+    { to: '/upload', icon: '📁', label: 'Upload CSV' },
     { section: 'Analytics' },
-    { to: '/predictions',   icon: '🤖', label: 'Predictions' },
+    { to: '/predictions', icon: '🤖', label: 'Predictions' },
     { to: '/model-metrics', icon: '📈', label: 'Model Metrics' },
   ];
 
   const studentLinks = [
     { section: 'My Space' },
-    { to: '/my-dashboard',  icon: '📊', label: 'My Dashboard' },
-    { to: '/submit',        icon: '🎯', label: 'Submit Data' },
+    { to: '/my-dashboard', icon: '📊', label: 'My Dashboard' },
+    { to: '/submit', icon: '🎯', label: 'Submit Data' },
     { section: 'Analytics' },
-    { to: '/predictions',   icon: '🔮', label: 'My Predictions' },
+    { to: '/predictions', icon: '🔮', label: 'My Predictions' },
   ];
 
   const links = isTeacher ? teacherLinks : studentLinks;
@@ -43,8 +45,8 @@ export default function Sidebar() {
     <aside className={sidebarClass}>
       {/* ── Brand (Acts as Toggle) ── */}
       <div className="sidebar-brand">
-        <div 
-          className="brand-icon" 
+        <div
+          className="brand-icon"
           onClick={toggle}
           role="button"
           tabIndex={0}
@@ -84,6 +86,13 @@ export default function Sidebar() {
               {isTeacher ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
             </div>
           </div>
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
           <button
             className="btn btn-sm btn-secondary"
             onClick={logoutUser}

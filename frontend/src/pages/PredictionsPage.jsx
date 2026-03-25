@@ -122,25 +122,27 @@ export default function PredictionsPage() {
         <div className="modal-overlay" onClick={() => setSelectedPred(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2>🔍 Prediction Details</h2>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'20px'}}>
+            <div className="modal-grid">
               <div className="metric-card">
                 <div className="metric-value">{selectedPred.predictedMarks?.toFixed(1)}</div>
                 <div className="metric-label">Predicted Marks</div>
               </div>
               <div className="metric-card">
-                <div className="metric-value">{selectedPred.grade}</div>
+                <div className="metric-value" style={{ color: 'var(--accent-purple)' }}>{selectedPred.grade}</div>
                 <div className="metric-label">Grade</div>
               </div>
             </div>
 
             {selectedPred.features && (
-              <div style={{marginBottom:'20px'}}>
-                <h3 style={{fontSize:'14px', fontWeight:600, marginBottom:'12px'}}>📋 Input Features</h3>
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px'}}>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📋 Input Features
+                </h3>
+                <div className="modal-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   {Object.entries(selectedPred.features).map(([key, val]) => (
-                    <div key={key} style={{padding:'8px 12px', background:'rgba(255,255,255,0.03)', borderRadius:'8px', fontSize:'13px'}}>
-                      <span style={{color:'#64748b'}}>{key}: </span>
-                      <span style={{fontWeight:600}}>{typeof val === 'number' ? val.toFixed(1) : val}</span>
+                    <div key={key} style={{ padding: '10px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)', borderRadius: '10px', fontSize: '13px' }}>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px', marginBottom: '2px' }}>{key}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{typeof val === 'number' ? val.toFixed(1) : val}</span>
                     </div>
                   ))}
                 </div>

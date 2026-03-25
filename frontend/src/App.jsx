@@ -4,6 +4,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SidebarProvider, useSidebar } from './context/SidebarContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -81,21 +82,18 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <SidebarProvider>
-          <AppRoutes />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 3500,
-              style: {
-                background: '#1f2937',
-                color: '#f1f5f9',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '12px',
-              }
-            }}
-          />
-        </SidebarProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            <AppRoutes />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 3500,
+                className: 'toast-custom',
+              }}
+            />
+          </SidebarProvider>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );
