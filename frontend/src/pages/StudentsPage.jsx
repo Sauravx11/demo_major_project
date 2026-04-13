@@ -20,10 +20,43 @@ function GradeBadge({ marks, grade }) {
   return <span className="badge badge-fail">Fail</span>;
 }
 
+/** Subject fields per stream+scienceType combination */
+const SUBJECT_FIELDS = {
+  'Science_Maths': [
+    { key: 'physics', label: 'Physics' },
+    { key: 'chemistry', label: 'Chemistry' },
+    { key: 'maths', label: 'Maths' },
+  ],
+  'Science_Bio': [
+    { key: 'physics', label: 'Physics' },
+    { key: 'chemistry', label: 'Chemistry' },
+    { key: 'biology', label: 'Biology' },
+  ],
+  'Commerce': [
+    { key: 'accounts', label: 'Accounts' },
+    { key: 'businessStudies', label: 'Business Studies' },
+    { key: 'economics', label: 'Economics' },
+  ],
+  'Arts': [
+    { key: 'history', label: 'History' },
+    { key: 'politicalScience', label: 'Political Science' },
+    { key: 'geography', label: 'Geography' },
+  ],
+};
+
+function getSubjectKey(stream, scienceType) {
+  if (stream === 'Science') return `Science_${scienceType || 'Maths'}`;
+  return stream;
+}
+
 function getEmptyForm() {
   return {
     studentId: '', name: '', email: '', attendance: '', studyHours: '',
-    internalMarks: '', prevMarks: '', assignmentScore: '', sleepHours: '',
+    internalMarks: '', prevMarks: '', assignmentScore: '',
+    stream: 'Science', scienceType: 'Maths',
+    physics: '', chemistry: '', maths: '', biology: '',
+    accounts: '', businessStudies: '', economics: '',
+    history: '', politicalScience: '', geography: '',
     participation: '0', testAvg: '', backlogs: '0'
   };
 }
@@ -78,7 +111,13 @@ export default function StudentsPage() {
       studentId: s.studentId, name: s.name, email: s.email || '',
       attendance: s.attendance?.toString() || '', studyHours: s.studyHours?.toString() || '',
       internalMarks: s.internalMarks?.toString() || '', prevMarks: s.prevMarks?.toString() || '',
-      assignmentScore: s.assignmentScore?.toString() || '', sleepHours: s.sleepHours?.toString() || '',
+      assignmentScore: s.assignmentScore?.toString() || '',
+      stream: s.stream || 'Science', scienceType: s.scienceType || '',
+      physics: s.physics?.toString() || '', chemistry: s.chemistry?.toString() || '',
+      maths: s.maths?.toString() || '', biology: s.biology?.toString() || '',
+      accounts: s.accounts?.toString() || '', businessStudies: s.businessStudies?.toString() || '',
+      economics: s.economics?.toString() || '', history: s.history?.toString() || '',
+      politicalScience: s.politicalScience?.toString() || '', geography: s.geography?.toString() || '',
       participation: s.participation?.toString() || '0', testAvg: s.testAvg?.toString() || '',
       backlogs: s.backlogs?.toString() || '0'
     });
@@ -91,15 +130,26 @@ export default function StudentsPage() {
     try {
       const payload = {
         ...form,
-        attendance:      parseFloat(form.attendance)      || 0,
-        studyHours:      parseFloat(form.studyHours)      || 0,
-        internalMarks:   parseFloat(form.internalMarks)   || 0,
-        prevMarks:       parseFloat(form.prevMarks)       || 0,
-        assignmentScore: parseFloat(form.assignmentScore) || 0,
-        sleepHours:      parseFloat(form.sleepHours)      || 0,
-        participation:   parseInt(form.participation)     || 0,
-        testAvg:         parseFloat(form.testAvg)         || 0,
-        backlogs:        parseInt(form.backlogs)          || 0,
+        attendance:       parseFloat(form.attendance)       || 0,
+        studyHours:       parseFloat(form.studyHours)       || 0,
+        internalMarks:    parseFloat(form.internalMarks)    || 0,
+        prevMarks:        parseFloat(form.prevMarks)        || 0,
+        assignmentScore:  parseFloat(form.assignmentScore)  || 0,
+        stream:           form.stream || 'Science',
+        scienceType:      form.stream === 'Science' ? (form.scienceType || 'Maths') : '',
+        physics:          parseFloat(form.physics)          || 0,
+        chemistry:        parseFloat(form.chemistry)        || 0,
+        maths:            parseFloat(form.maths)            || 0,
+        biology:          parseFloat(form.biology)          || 0,
+        accounts:         parseFloat(form.accounts)         || 0,
+        businessStudies:  parseFloat(form.businessStudies)  || 0,
+        economics:        parseFloat(form.economics)        || 0,
+        history:          parseFloat(form.history)          || 0,
+        politicalScience: parseFloat(form.politicalScience) || 0,
+        geography:        parseFloat(form.geography)        || 0,
+        participation:    parseInt(form.participation)      || 0,
+        testAvg:          parseFloat(form.testAvg)          || 0,
+        backlogs:         parseInt(form.backlogs)           || 0,
       };
       if (modal.mode === 'create') { await createStudent(payload); toast.success('Student created!'); }
       else                         { await updateStudent(modal.data._id, payload); toast.success('Student updated!'); }
@@ -115,6 +165,22 @@ export default function StudentsPage() {
   };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleStreamChangeModal = (newStream) => {
+    const updates = { stream: newStream };
+    // Reset subject marks
+    updates.physics = ''; updates.chemistry = ''; updates.maths = ''; updates.biology = '';
+    updates.accounts = ''; updates.businessStudies = ''; updates.economics = '';
+    updates.history = ''; updates.politicalScience = ''; updates.geography = '';
+    if (newStream === 'Science') {
+      updates.scienceType = 'Maths';
+    } else {
+      updates.scienceType = '';
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  const currentSubjects = SUBJECT_FIELDS[getSubjectKey(form.stream, form.scienceType)] || [];
 
   return (
     <div className="fade-in">
@@ -317,7 +383,7 @@ export default function StudentsPage() {
       {/* ── Create/Edit Modal ── */}
       {modal.open && (
         <div className="modal-overlay" onClick={() => setModal({ open: false, mode: 'create', data: null })}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
             <h2>{modal.mode === 'create' ? '➕ Add Student' : '✏️ Edit Student'}</h2>
             <form onSubmit={handleSave}>
               <div className="form-row">
@@ -364,23 +430,81 @@ export default function StudentsPage() {
                   <input name="testAvg" type="number" step="0.01" className="form-input" value={form.testAvg} onChange={handleChange} />
                 </div>
               </div>
+
+              {/* Stream & Science Type */}
               <div className="form-row">
                 <div className="form-group">
-                  <label>Sleep Hours</label>
-                  <input name="sleepHours" type="number" step="0.01" className="form-input" value={form.sleepHours} onChange={handleChange} />
-                </div>
-                <div className="form-group">
-                  <label>Participation</label>
-                  <select name="participation" className="form-input" value={form.participation} onChange={handleChange}>
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
+                  <label>Stream</label>
+                  <select name="stream" className="form-input" value={form.stream} onChange={e => handleStreamChangeModal(e.target.value)}>
+                    <option value="Science">Science</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Arts">Arts</option>
                   </select>
                 </div>
+                {form.stream === 'Science' && (
+                  <div className="form-group">
+                    <label>Science Type</label>
+                    <select name="scienceType" className="form-input" value={form.scienceType} onChange={handleChange}>
+                      <option value="Maths">Maths</option>
+                      <option value="Bio">Bio</option>
+                    </select>
+                  </div>
+                )}
+                {form.stream !== 'Science' && (
+                  <div className="form-group">
+                    <label>Participation</label>
+                    <select name="participation" className="form-input" value={form.participation} onChange={handleChange}>
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                )}
               </div>
-              <div className="form-group">
-                <label>Backlogs</label>
-                <input name="backlogs" type="number" className="form-input" value={form.backlogs} onChange={handleChange} />
-              </div>
+
+              {/* Dynamic Subject Fields */}
+              {currentSubjects.length > 0 && (
+                <div style={{
+                  padding: '12px 16px', marginBottom: '16px',
+                  background: 'rgba(139,92,246,0.05)',
+                  border: '1px solid rgba(139,92,246,0.15)',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: '#8b5cf6' }}>
+                    📚 Subject Marks
+                  </div>
+                  <div className="form-row" style={{ flexWrap: 'wrap' }}>
+                    {currentSubjects.map(subj => (
+                      <div className="form-group" key={subj.key} style={{ flex: '1 1 30%', minWidth: '120px' }}>
+                        <label>{subj.label}</label>
+                        <input name={subj.key} type="number" step="0.01" min="0" max="100" className="form-input" value={form[subj.key]} onChange={handleChange} placeholder="0-100" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {form.stream === 'Science' && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Participation</label>
+                    <select name="participation" className="form-input" value={form.participation} onChange={handleChange}>
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Backlogs</label>
+                    <input name="backlogs" type="number" className="form-input" value={form.backlogs} onChange={handleChange} />
+                  </div>
+                </div>
+              )}
+              {form.stream !== 'Science' && (
+                <div className="form-group">
+                  <label>Backlogs</label>
+                  <input name="backlogs" type="number" className="form-input" value={form.backlogs} onChange={handleChange} />
+                </div>
+              )}
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setModal({ open: false, mode: 'create', data: null })}>Cancel</button>
                 <button type="submit" className="btn btn-primary">{modal.mode === 'create' ? 'Create Student' : 'Save Changes'}</button>

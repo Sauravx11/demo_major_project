@@ -34,11 +34,6 @@ const FIELDS = [
     warn: (v) => v < 40 ? 'danger' : v < 60 ? 'warning' : 'good'
   },
   {
-    key: 'sleepHours', label: 'Sleep Hours', unit: 'hrs', min: 3, max: 12, step: 0.5,
-    icon: '😴', hint: 'Average sleep per night',
-    warn: (v) => v < 5 ? 'danger' : v < 7 ? 'warning' : 'good'
-  },
-  {
     key: 'testAvg', label: 'Test Average', unit: '/100', min: 0, max: 100, step: 0.5,
     icon: '✏️', hint: 'Average score across all unit tests',
     warn: (v) => v < 40 ? 'danger' : v < 60 ? 'warning' : 'good'
@@ -49,6 +44,35 @@ const FIELDS = [
     warn: (v) => v > 2 ? 'danger' : v > 0 ? 'warning' : 'good'
   },
 ];
+
+/** Subject fields per stream+scienceType combination */
+const SUBJECT_MAP = {
+  'Science_Maths': [
+    { key: 'physics', label: 'Physics', icon: '⚛️' },
+    { key: 'chemistry', label: 'Chemistry', icon: '🧪' },
+    { key: 'maths', label: 'Maths', icon: '📐' },
+  ],
+  'Science_Bio': [
+    { key: 'physics', label: 'Physics', icon: '⚛️' },
+    { key: 'chemistry', label: 'Chemistry', icon: '🧪' },
+    { key: 'biology', label: 'Biology', icon: '🧬' },
+  ],
+  'Commerce': [
+    { key: 'accounts', label: 'Accounts', icon: '🧾' },
+    { key: 'businessStudies', label: 'Business Studies', icon: '💼' },
+    { key: 'economics', label: 'Economics', icon: '📈' },
+  ],
+  'Arts': [
+    { key: 'history', label: 'History', icon: '🏛️' },
+    { key: 'politicalScience', label: 'Political Science', icon: '🏛️' },
+    { key: 'geography', label: 'Geography', icon: '🌍' },
+  ],
+};
+
+function getSubjectKey(stream, scienceType) {
+  if (stream === 'Science') return `Science_${scienceType || 'Maths'}`;
+  return stream;
+}
 
 const GRADE_CONFIG = {
   A:    { color: '#10b981', bg: 'rgba(16,185,129,0.15)', label: 'Excellent!', emoji: '🌟' },
@@ -66,8 +90,11 @@ const WARN_COLORS = {
 function getInitialForm() {
   return {
     attendance: 75, studyHours: 4, internalMarks: 65, prevMarks: 65,
-    assignmentScore: 70, sleepHours: 7, participation: 1,
-    testAvg: 65, backlogs: 0
+    assignmentScore: 70, stream: 'Science', scienceType: 'Maths',
+    physics: 65, chemistry: 65, maths: 65, biology: 0,
+    accounts: 0, businessStudies: 0, economics: 0,
+    history: 0, politicalScience: 0, geography: 0,
+    participation: 1, testAvg: 65, backlogs: 0
   };
 }
 
@@ -79,6 +106,33 @@ export default function StudentInputPage() {
 
   const handleChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: parseFloat(value) }));
+  };
+
+  const handleStreamChange = (newStream) => {
+    const updates = { stream: newStream };
+    // Reset all subject marks when stream changes
+    updates.physics = 0; updates.chemistry = 0; updates.maths = 0; updates.biology = 0;
+    updates.accounts = 0; updates.businessStudies = 0; updates.economics = 0;
+    updates.history = 0; updates.politicalScience = 0; updates.geography = 0;
+
+    if (newStream === 'Science') {
+      updates.scienceType = 'Maths';
+      updates.physics = 65; updates.chemistry = 65; updates.maths = 65;
+    } else if (newStream === 'Commerce') {
+      updates.scienceType = '';
+      updates.accounts = 65; updates.businessStudies = 65; updates.economics = 65;
+    } else {
+      updates.scienceType = '';
+      updates.history = 65; updates.politicalScience = 65; updates.geography = 65;
+    }
+    setForm(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleScienceTypeChange = (newType) => {
+    const updates = { scienceType: newType, maths: 0, biology: 0 };
+    if (newType === 'Maths') updates.maths = 65;
+    else updates.biology = 65;
+    setForm(prev => ({ ...prev, ...updates }));
   };
 
   const handleSubmit = async (e) => {
@@ -103,6 +157,7 @@ export default function StudentInputPage() {
   };
 
   const gradeConfig = result?.prediction ? GRADE_CONFIG[result.prediction.grade] || GRADE_CONFIG['C'] : null;
+  const currentSubjects = SUBJECT_MAP[getSubjectKey(form.stream, form.scienceType)] || [];
 
   return (
     <div className="fade-in">
@@ -152,6 +207,113 @@ export default function StudentInputPage() {
                 {form.participation ? '✅ Participates in class activities' : '❌ Does not actively participate'}
               </div>
             </div>
+
+            {/* Stream dropdown */}
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>📘 Stream</span>
+                <span style={{
+                  fontWeight: 700, fontSize: '13px', color: '#8b5cf6',
+                  background: 'rgba(139,92,246,0.12)', padding: '2px 10px', borderRadius: 20
+                }}>
+                  {form.stream}
+                </span>
+              </label>
+              <select
+                id="select-stream"
+                className="form-input"
+                value={form.stream}
+                onChange={e => handleStreamChange(e.target.value)}
+                style={{ marginTop: '8px' }}
+              >
+                <option value="Science">Science</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Arts">Arts</option>
+              </select>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Select your academic stream
+              </div>
+            </div>
+
+            {/* Science Type dropdown (only for Science) */}
+            {form.stream === 'Science' && (
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🔬 Science Type</span>
+                  <span style={{
+                    fontWeight: 700, fontSize: '13px', color: '#06b6d4',
+                    background: 'rgba(6,182,212,0.12)', padding: '2px 10px', borderRadius: 20
+                  }}>
+                    {form.scienceType}
+                  </span>
+                </label>
+                <select
+                  id="select-scienceType"
+                  className="form-input"
+                  value={form.scienceType}
+                  onChange={e => handleScienceTypeChange(e.target.value)}
+                  style={{ marginTop: '8px' }}
+                >
+                  <option value="Maths">Maths</option>
+                  <option value="Bio">Bio</option>
+                </select>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Select Maths or Bio track within Science
+                </div>
+              </div>
+            )}
+
+            {/* Dynamic Subject Marks */}
+            {currentSubjects.length > 0 && (
+              <div style={{
+                marginBottom: '20px', padding: '16px',
+                background: 'rgba(139,92,246,0.05)',
+                border: '1px solid rgba(139,92,246,0.15)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px', color: '#8b5cf6' }}>
+                  📚 Subject Marks
+                </div>
+                {currentSubjects.map(subj => {
+                  const val = form[subj.key] || 0;
+                  const warnColor = val < 40 ? '#ef4444' : val < 60 ? '#f59e0b' : '#10b981';
+                  const pct = (val / 100) * 100;
+                  return (
+                    <div key={subj.key} className="form-group" style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>{subj.icon} {subj.label}</span>
+                        <span style={{
+                          fontWeight: 700, fontSize: '15px', color: warnColor,
+                          background: `${warnColor}18`, padding: '2px 10px', borderRadius: 20
+                        }}>
+                          {val.toFixed(1)}/100
+                        </span>
+                      </label>
+                      <input
+                        id={`slider-${subj.key}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        value={val}
+                        onChange={e => handleChange(subj.key, e.target.value)}
+                        style={{
+                          width: '100%', margin: '8px 0 4px',
+                          accentColor: warnColor,
+                          background: `linear-gradient(to right, ${warnColor} ${pct}%, rgba(255,255,255,0.1) ${pct}%)`,
+                          height: 6, borderRadius: 3, outline: 'none', border: 'none', cursor: 'pointer'
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                        <span>0</span>
+                        <span>Marks in {subj.label}</span>
+                        <span>100</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Slider inputs */}
             {FIELDS.map(field => {
@@ -278,6 +440,24 @@ export default function StudentInputPage() {
                         </li>
                       ))}
                     </ul>
+
+                    {/* Career Suggestion */}
+                    {result.prediction.careerSuggestion && (
+                      <div style={{
+                        marginTop: '16px', padding: '14px 18px',
+                        background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.08))',
+                        border: '1px solid rgba(139,92,246,0.25)',
+                        borderRadius: '12px'
+                      }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px', color: '#8b5cf6' }}>
+                          🎯 Career Suggestion
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                          {result.prediction.careerSuggestion}
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{ marginTop: '14px', textAlign: 'center' }}>
                       <a href="/my-dashboard" style={{ fontSize: '13px', color: 'var(--accent-purple)', textDecoration: 'none' }}>
                         📊 View your full performance dashboard →

@@ -44,7 +44,18 @@ class StudentFeatures(BaseModel):
     internal_marks: float
     prev_marks: float
     assignment_score: float
-    sleep_hours: float
+    stream: str = "Science"
+    science_type: str = ""
+    physics: float = 0
+    chemistry: float = 0
+    maths: float = 0
+    biology: float = 0
+    accounts: float = 0
+    business_studies: float = 0
+    economics: float = 0
+    history: float = 0
+    political_science: float = 0
+    geography: float = 0
     participation: float
     test_avg: float
     backlogs: float
@@ -54,6 +65,10 @@ class PredictionResponse(BaseModel):
     predicted_marks: float
     grade: str
     model_used: str
+
+    model_config = {
+        "protected_namespaces": ()
+    }
 
 
 class BatchPredictionItem(BaseModel):
@@ -82,6 +97,26 @@ def load_model_artifacts():
             status_code=503,
             detail="Models not trained yet. Call /train first."
         )
+
+
+def build_feature_vector(feature_dict, feature_names):
+    """Build a feature vector from a dict, handling one-hot encoded columns."""
+    feature_vector = []
+    for f in feature_names:
+        if f in feature_dict:
+            feature_vector.append(feature_dict[f])
+        elif f.startswith('stream_'):
+            # One-hot encoded stream column
+            feature_vector.append(1.0 if feature_dict.get('stream') == f.replace('stream_', '') else 0.0)
+        elif f.startswith('science_type_'):
+            # One-hot encoded science_type column
+            feature_vector.append(1.0 if feature_dict.get('science_type') == f.replace('science_type_', '') else 0.0)
+        elif f.startswith('subjects_'):
+            # Legacy one-hot encoded subjects column (backward compat)
+            feature_vector.append(0.0)
+        else:
+            feature_vector.append(0)
+    return feature_vector
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +150,7 @@ async def predict_single(features: StudentFeatures):
 
     # Build feature vector in correct order
     feature_dict = features.dict()
-    feature_vector = [feature_dict.get(f, 0) for f in feature_names]
+    feature_vector = build_feature_vector(feature_dict, feature_names)
     X = np.array([feature_vector])
     X_scaled = scaler.transform(X)
 
@@ -138,7 +173,7 @@ async def predict_batch(request: BatchPredictionRequest):
     results = []
     for item in request.students:
         feature_dict = item.features.dict()
-        feature_vector = [feature_dict.get(f, 0) for f in feature_names]
+        feature_vector = build_feature_vector(feature_dict, feature_names)
         X = np.array([feature_vector])
         X_scaled = scaler.transform(X)
 
@@ -201,7 +236,9 @@ async def upload_csv_and_retrain(file: UploadFile = File(...)):
 
         # Validate CSV has required columns
         df = pd.read_csv(io.BytesIO(contents))
-        missing_cols = [c for c in FEATURE_COLS if c not in df.columns]
+        # Check for essential numeric columns (stream/science_type are categorical and may be encoded)
+        essential_cols = [c for c in FEATURE_COLS if c not in ('stream', 'science_type')]
+        missing_cols = [c for c in essential_cols if c not in df.columns]
         if missing_cols:
             raise HTTPException(
                 status_code=400,
@@ -234,7 +271,7 @@ async def get_dataset_stats():
         df = df.drop(columns=["student_id"])
 
     stats = {}
-    for col in df.columns:
+    for col in df.select_dtypes(include=[np.number]).columns:
         stats[col] = {
             "mean": round(float(df[col].mean()), 2),
             "median": round(float(df[col].median()), 2),

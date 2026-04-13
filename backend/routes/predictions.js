@@ -32,10 +32,6 @@ function generateRecommendations(features, predictedMarks, grade) {
     recs.push(`🔄 ${features.backlogs} backlog(s) detected. Clear backlogs to improve overall performance.`);
   }
 
-  if (features.sleepHours < 5) {
-    recs.push('😴 Getting less than 5 hours of sleep. Adequate sleep (7-8 hrs) improves cognition.');
-  }
-
   if (features.internalMarks < 50) {
     recs.push('📝 Internal marks are below average. Focus on internal assessments and class tests.');
   }
@@ -60,6 +56,81 @@ function generateRecommendations(features, predictedMarks, grade) {
 }
 
 /**
+ * Get career suggestion based on stream and scienceType
+ */
+function getCareerSuggestion(stream, scienceType) {
+  if (stream === 'Science' && scienceType === 'Maths') {
+    return 'Engineering, Data Science, Technology';
+  }
+  if (stream === 'Science' && scienceType === 'Bio') {
+    return 'Medical, Pharmacy, Life Sciences';
+  }
+  if (stream === 'Commerce') {
+    return 'Finance, CA, Business Management';
+  }
+  if (stream === 'Arts') {
+    return 'Humanities, Law, Design, Civil Services';
+  }
+  return '';
+}
+
+/**
+ * Build features object for storing in prediction/submission records
+ */
+function buildFeaturesSnapshot(student) {
+  return {
+    attendance:       student.attendance,
+    studyHours:       student.studyHours,
+    internalMarks:    student.internalMarks,
+    prevMarks:        student.prevMarks,
+    assignmentScore:  student.assignmentScore,
+    stream:           student.stream,
+    scienceType:      student.scienceType || '',
+    physics:          student.physics || 0,
+    chemistry:        student.chemistry || 0,
+    maths:            student.maths || 0,
+    biology:          student.biology || 0,
+    accounts:         student.accounts || 0,
+    businessStudies:  student.businessStudies || 0,
+    economics:        student.economics || 0,
+    history:          student.history || 0,
+    politicalScience: student.politicalScience || 0,
+    geography:        student.geography || 0,
+    participation:    student.participation,
+    testAvg:          student.testAvg,
+    backlogs:         student.backlogs
+  };
+}
+
+/**
+ * Build ML feature payload (snake_case keys for Python service)
+ */
+function buildMLPayload(student) {
+  return {
+    attendance:         student.attendance,
+    study_hours:        student.studyHours,
+    internal_marks:     student.internalMarks,
+    prev_marks:         student.prevMarks,
+    assignment_score:   student.assignmentScore,
+    stream:             student.stream,
+    science_type:       student.scienceType || '',
+    physics:            student.physics || 0,
+    chemistry:          student.chemistry || 0,
+    maths:              student.maths || 0,
+    biology:            student.biology || 0,
+    accounts:           student.accounts || 0,
+    business_studies:   student.businessStudies || 0,
+    economics:          student.economics || 0,
+    history:            student.history || 0,
+    political_science:  student.politicalScience || 0,
+    geography:          student.geography || 0,
+    participation:      student.participation,
+    test_avg:           student.testAvg,
+    backlogs:           student.backlogs
+  };
+}
+
+/**
  * POST /api/predictions/predict/:studentId
  * Trigger prediction for a single student via ML service
  */
@@ -70,44 +141,26 @@ router.post('/predict/:studentId', protect, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    const features = {
-      attendance: student.attendance,
-      study_hours: student.studyHours,
-      internal_marks: student.internalMarks,
-      prev_marks: student.prevMarks,
-      assignment_score: student.assignmentScore,
-      sleep_hours: student.sleepHours,
-      participation: student.participation,
-      test_avg: student.testAvg,
-      backlogs: student.backlogs
-    };
+    const features = buildMLPayload(student);
 
     // Call ML service
     const mlResponse = await axios.post(`${ML_URL}/predict`, features);
     const { predicted_marks, grade, model_used } = mlResponse.data;
 
     // Generate recommendations
-    const recFeatures = {
-      attendance: student.attendance,
-      studyHours: student.studyHours,
-      internalMarks: student.internalMarks,
-      prevMarks: student.prevMarks,
-      assignmentScore: student.assignmentScore,
-      sleepHours: student.sleepHours,
-      participation: student.participation,
-      testAvg: student.testAvg,
-      backlogs: student.backlogs
-    };
+    const recFeatures = buildFeaturesSnapshot(student);
     const recommendations = generateRecommendations(recFeatures, predicted_marks, grade);
 
     // Store prediction in DB
+    const careerSuggestion = getCareerSuggestion(student.stream, student.scienceType);
     const prediction = await Prediction.create({
       studentId: student._id,
       predictedMarks: predicted_marks,
       grade,
       modelUsed: model_used,
       features: recFeatures,
-      recommendations
+      recommendations,
+      careerSuggestion
     });
 
     res.json({
@@ -139,17 +192,7 @@ router.post('/predict-all', protect, authorize('teacher'), async (req, res) => {
     const batchPayload = {
       students: students.map(s => ({
         student_id: s._id.toString(),
-        features: {
-          attendance: s.attendance,
-          study_hours: s.studyHours,
-          internal_marks: s.internalMarks,
-          prev_marks: s.prevMarks,
-          assignment_score: s.assignmentScore,
-          sleep_hours: s.sleepHours,
-          participation: s.participation,
-          test_avg: s.testAvg,
-          backlogs: s.backlogs
-        }
+        features: buildMLPayload(s)
       }))
     };
 
@@ -159,17 +202,7 @@ router.post('/predict-all', protect, authorize('teacher'), async (req, res) => {
     // Store all predictions
     const predOps = predictions.map((p, idx) => {
       const student = students.find(s => s._id.toString() === p.student_id);
-      const recFeatures = student ? {
-        attendance: student.attendance,
-        studyHours: student.studyHours,
-        internalMarks: student.internalMarks,
-        prevMarks: student.prevMarks,
-        assignmentScore: student.assignmentScore,
-        sleepHours: student.sleepHours,
-        participation: student.participation,
-        testAvg: student.testAvg,
-        backlogs: student.backlogs
-      } : {};
+      const recFeatures = student ? buildFeaturesSnapshot(student) : {};
 
       return {
         studentId: p.student_id,
@@ -177,7 +210,8 @@ router.post('/predict-all', protect, authorize('teacher'), async (req, res) => {
         grade: p.grade,
         modelUsed: mlResponse.data.model_used,
         features: recFeatures,
-        recommendations: student ? generateRecommendations(recFeatures, p.predicted_marks, p.grade) : []
+        recommendations: student ? generateRecommendations(recFeatures, p.predicted_marks, p.grade) : [],
+        careerSuggestion: student ? getCareerSuggestion(student.stream, student.scienceType) : ''
       };
     });
 

@@ -23,21 +23,33 @@ const studentSubmissionSchema = new mongoose.Schema({
   },
   // Academic feature snapshot
   features: {
-    attendance:      { type: Number, required: true },
-    studyHours:      { type: Number, required: true },
-    internalMarks:   { type: Number, required: true },
-    prevMarks:       { type: Number, required: true },
-    assignmentScore: { type: Number, required: true },
-    sleepHours:      { type: Number, required: true },
-    participation:   { type: Number, required: true },
-    testAvg:         { type: Number, required: true },
-    backlogs:        { type: Number, required: true }
+    attendance:        { type: Number, required: true },
+    studyHours:        { type: Number, required: true },
+    internalMarks:     { type: Number, required: true },
+    prevMarks:         { type: Number, required: true },
+    assignmentScore:   { type: Number, required: true },
+    stream:            { type: String, enum: ['Science', 'Commerce', 'Arts'], required: true },
+    scienceType:       { type: String, default: '' },
+    physics:           { type: Number, default: 0 },
+    chemistry:         { type: Number, default: 0 },
+    maths:             { type: Number, default: 0 },
+    biology:           { type: Number, default: 0 },
+    accounts:          { type: Number, default: 0 },
+    businessStudies:   { type: Number, default: 0 },
+    economics:         { type: Number, default: 0 },
+    history:           { type: Number, default: 0 },
+    politicalScience:  { type: Number, default: 0 },
+    geography:         { type: Number, default: 0 },
+    participation:     { type: Number, required: true },
+    testAvg:           { type: Number, required: true },
+    backlogs:          { type: Number, required: true }
   },
   // ML prediction result at time of submission
   predictedMarks:  { type: Number, default: null },
   grade:           { type: String, enum: ['A', 'B', 'C', 'Fail', 'N/A'], default: 'N/A' },
   modelUsed:       { type: String, default: 'Random Forest' },
   recommendations: [{ type: String }],
+  careerSuggestion: { type: String, default: '' },
   // Linked prediction document
   predictionId: {
     type: mongoose.Schema.Types.ObjectId,

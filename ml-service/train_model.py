@@ -20,7 +20,11 @@ import joblib
 # ---------------------------------------------------------------------------
 FEATURE_COLS = [
     "attendance", "study_hours", "internal_marks", "prev_marks",
-    "assignment_score", "sleep_hours", "participation", "test_avg", "backlogs"
+    "assignment_score", "stream", "science_type",
+    "physics", "chemistry", "maths", "biology",
+    "accounts", "business_studies", "economics",
+    "history", "political_science", "geography",
+    "participation", "test_avg", "backlogs"
 ]
 TARGET_COL = "final_marks"
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
@@ -56,10 +60,24 @@ def load_and_preprocess(csv_path: str | None = None) -> tuple:
     if "student_id" in df.columns:
         df = df.drop(columns=["student_id"])
 
+    # Drop sleep_hours if still present in old datasets
+    if "sleep_hours" in df.columns:
+        df = df.drop(columns=["sleep_hours"])
+
+    # Drop old subjects column if present (replaced by stream/science_type)
+    if "subjects" in df.columns:
+        df = df.drop(columns=["subjects"])
+
     # Handle missing values – fill numeric cols with median
     for col in df.select_dtypes(include=[np.number]).columns:
         if df[col].isnull().sum() > 0:
             df[col].fillna(df[col].median(), inplace=True)
+
+    # Fill missing categorical values
+    if "stream" in df.columns:
+        df["stream"].fillna("Science", inplace=True)
+    if "science_type" in df.columns:
+        df["science_type"].fillna("", inplace=True)
 
     # Encode any categorical columns (one-hot) – dataset is all numeric, but just in case
     cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()

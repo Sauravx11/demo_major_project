@@ -20,7 +20,9 @@ export default function PredictionsPage() {
     setLoading(true);
     try {
       const { data } = await getPredictions({ page, limit: 20 });
-      setPredictions(data.data);
+      // Filter out orphaned predictions where the student has been deleted
+      const validPredictions = data.data.filter(p => p.studentId != null);
+      setPredictions(validPredictions);
       setPagination(data.pagination);
     } catch {
       toast.error('Failed to load predictions');
@@ -83,8 +85,8 @@ export default function PredictionsPage() {
                 <tbody>
                   {predictions.map(p => (
                     <tr key={p._id}>
-                      <td style={{fontWeight:600}}>{p.studentId?.name || '—'}</td>
-                      <td style={{color:'var(--accent-purple)'}}>{p.studentId?.studentId || '—'}</td>
+                      <td style={{fontWeight:600}}>{p.studentId?.name}</td>
+                      <td style={{color:'var(--accent-purple)'}}>{p.studentId?.studentId}</td>
                       <td style={{fontWeight:700, fontSize:'16px'}}>{p.predictedMarks?.toFixed(1)}</td>
                       <td>{getGradeBadge(p.grade)}</td>
                       <td style={{color:'var(--text-muted)', fontSize:'13px'}}>{p.modelUsed}</td>
@@ -157,6 +159,22 @@ export default function PredictionsPage() {
                     <li key={i} className="recommendation-item">{r}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {selectedPred.careerSuggestion && (
+              <div style={{
+                marginTop: '16px', padding: '14px 18px',
+                background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.08))',
+                border: '1px solid rgba(139,92,246,0.25)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px', color: '#8b5cf6' }}>
+                  🎯 Career Suggestion
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                  {selectedPred.careerSuggestion}
+                </div>
               </div>
             )}
 

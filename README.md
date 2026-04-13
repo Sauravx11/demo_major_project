@@ -149,7 +149,7 @@ student_performance_project/
 | Linear Regression | ~0.80–0.88 |
 | Decision Tree | ~0.85–0.92 |
 
-Features: `attendance`, `study_hours`, `internal_marks`, `prev_marks`, `assignment_score`, `sleep_hours`, `participation`, `test_avg`, `backlogs`
+Features: `attendance`, `study_hours`, `internal_marks`, `prev_marks`, `assignment_score`, `stream`, `science_type`, `physics`, `chemistry`, `maths`, `biology`, `accounts`, `business_studies`, `economics`, `history`, `political_science`, `geography`, `participation`, `test_avg`, `backlogs`
 
 Target: `final_marks` (0–100) → Derived grade (A ≥ 85, B ≥ 70, C ≥ 50, Fail < 50)
 

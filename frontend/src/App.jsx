@@ -7,6 +7,7 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
@@ -51,11 +52,12 @@ function AppLayout({ children }) {
 
 function AppRoutes() {
   const { isAuthenticated, isTeacher } = useAuth();
-  const defaultPath = isAuthenticated ? (isTeacher ? '/dashboard' : '/my-dashboard') : '/login';
+  const defaultPath = isAuthenticated ? (isTeacher ? '/dashboard' : '/my-dashboard') : '/';
 
   return (
     <Routes>
       {/* Public */}
+      <Route path="/"      element={isAuthenticated ? <Navigate to={defaultPath} /> : <LandingPage />} />
       <Route path="/login"  element={isAuthenticated ? <Navigate to={defaultPath} /> : <LoginPage />} />
       <Route path="/signup" element={isAuthenticated ? <Navigate to={defaultPath} /> : <SignupPage />} />
 

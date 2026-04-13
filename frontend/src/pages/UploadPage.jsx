@@ -82,7 +82,7 @@ export default function UploadPage() {
           ) : (
             <>
               <p style={{fontSize:'16px', fontWeight:600, marginBottom:'4px'}}>Drop your CSV file here</p>
-              <p>or click to browse. Required columns: attendance, study_hours, internal_marks, prev_marks, assignment_score, sleep_hours, participation, test_avg, backlogs, final_marks</p>
+              <p>or click to browse. Required columns: attendance, study_hours, internal_marks, prev_marks, assignment_score, subjects, participation, test_avg, backlogs, final_marks</p>
             </>
           )}
         </div>
@@ -147,7 +147,7 @@ export default function UploadPage() {
               <tr><td>internal_marks</td><td>Float</td><td>Internal assessment score</td><td>0-100</td></tr>
               <tr><td>prev_marks</td><td>Float</td><td>Previous semester marks</td><td>0-100</td></tr>
               <tr><td>assignment_score</td><td>Float</td><td>Assignment completion score</td><td>0-100</td></tr>
-              <tr><td>sleep_hours</td><td>Float</td><td>Average sleep hours per night</td><td>4-9</td></tr>
+              <tr><td>subjects</td><td>String</td><td>Subject stream (Maths, Bio, Commerce, Arts)</td><td>Maths/Bio/Commerce/Arts</td></tr>
               <tr><td>participation</td><td>Integer</td><td>Class participation (0=No, 1=Yes)</td><td>0-1</td></tr>
               <tr><td>test_avg</td><td>Float</td><td>Average test score</td><td>0-100</td></tr>
               <tr><td>backlogs</td><td>Integer</td><td>Number of backlogs</td><td>0-5</td></tr>

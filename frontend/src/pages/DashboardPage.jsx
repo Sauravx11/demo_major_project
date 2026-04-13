@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   getOverview, getAttendanceVsMarks, getStudyHoursVsPerformance,
-  getPerformanceDistribution, getTopWeakStudents
+  getPerformanceDistribution, getTopWeakStudents, getAtRiskStudents
 } from '../services/api';
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [studyData, setStudy]           = useState([]);
   const [distData, setDist]             = useState([]);
   const [topWeak, setTopWeak]           = useState({ topStudents: [], weakStudents: [] });
+  const [atRiskList, setAtRiskList]     = useState([]);
   const [loading, setLoading]           = useState(true);
 
   useEffect(() => { fetchData(); }, []);
@@ -63,7 +64,14 @@ export default function DashboardPage() {
       setTopWeak(tw.data.data);
     } catch (err) {
       console.warn('[Dashboard] Top/weak students unavailable:', err?.response?.data?.message || err.message);
-      // Leave topWeak as default { topStudents: [], weakStudents: [] } — panels just stay empty
+    }
+
+    // ── At-risk students detail list ─────────────────────────────────────
+    try {
+      const ar = await getAtRiskStudents();
+      setAtRiskList(ar.data.data);
+    } catch (err) {
+      console.warn('[Dashboard] At-risk students unavailable:', err?.response?.data?.message || err.message);
     }
   };
 
@@ -267,6 +275,57 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── At-Risk Students Detail Panel ── */}
+      {atRiskList.length > 0 && (
+        <div className="card" style={{ marginTop: '24px' }}>
+          <h3 style={{ marginBottom: '16px', color: '#f59e0b' }}>🚨 At-Risk Students</h3>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+            Students with attendance below 60% or 3+ backlogs
+          </p>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>ID</th>
+                  <th>Attendance</th>
+                  <th>Backlogs</th>
+                  <th>Predicted Marks</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {atRiskList.map((s, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ color: 'var(--accent-purple)' }}>{s.studentId}</td>
+                    <td>
+                      <span style={{ color: s.attendance < 60 ? '#ef4444' : '#f59e0b' }}>
+                        {s.attendance?.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ color: s.backlogs >= 3 ? '#ef4444' : 'var(--text-primary)' }}>
+                        {s.backlogs}
+                      </span>
+                    </td>
+                    <td style={{
+                      fontWeight: 700,
+                      color: s.predictedMarks != null
+                        ? (s.predictedMarks >= 70 ? '#10b981' : s.predictedMarks >= 50 ? '#f59e0b' : '#ef4444')
+                        : 'var(--text-muted)'
+                    }}>
+                      {s.predictedMarks != null ? s.predictedMarks.toFixed(1) : '—'}
+                    </td>
+                    <td>{s.grade ? <GradeBadge grade={s.grade} /> : <span className="badge" style={{ background: 'rgba(100,116,139,0.15)', color: '#64748b' }}>N/A</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

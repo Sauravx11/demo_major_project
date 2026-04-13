@@ -222,6 +222,23 @@ export default function StudentDashboardPage() {
               <p>No issues detected. Keep it up!</p>
             </div>
           )}
+
+          {/* Career Suggestion */}
+          {latestPrediction?.careerSuggestion && (
+            <div style={{
+              marginTop: '16px', padding: '14px 18px',
+              background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.08))',
+              border: '1px solid rgba(139,92,246,0.25)',
+              borderRadius: '12px'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px', color: '#8b5cf6' }}>
+                🎯 Career Suggestion
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                {latestPrediction.careerSuggestion}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submission History */}

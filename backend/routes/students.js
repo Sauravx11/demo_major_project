@@ -111,6 +111,25 @@ router.get('/all-submissions', protect, authorize('teacher'), async (req, res) =
 });
 
 /**
+ * Get career suggestion based on stream and scienceType
+ */
+function getCareerSuggestion(stream, scienceType) {
+  if (stream === 'Science' && scienceType === 'Maths') {
+    return 'Engineering, Data Science, Technology';
+  }
+  if (stream === 'Science' && scienceType === 'Bio') {
+    return 'Medical, Pharmacy, Life Sciences';
+  }
+  if (stream === 'Commerce') {
+    return 'Finance, CA, Business Management';
+  }
+  if (stream === 'Arts') {
+    return 'Humanities, Law, Design, Civil Services';
+  }
+  return '';
+}
+
+/**
  * POST /api/students/submit-data
  * Student submits their own academic data — auto-links to their user account.
  * Creates/updates their Student document, generates ML prediction,
@@ -120,7 +139,11 @@ router.post('/submit-data', protect, authorize('student'), async (req, res) => {
   try {
     const {
       attendance, studyHours, internalMarks, prevMarks,
-      assignmentScore, sleepHours, participation, testAvg, backlogs
+      assignmentScore, stream, scienceType,
+      physics, chemistry, maths, biology,
+      accounts, businessStudies, economics,
+      history, politicalScience, geography,
+      participation, testAvg, backlogs
     } = req.body;
 
     const studentId = `STU-${req.user._id.toString().slice(-6).toUpperCase()}`;
@@ -134,15 +157,26 @@ router.post('/submit-data', protect, authorize('student'), async (req, res) => {
           name: req.user.name,
           email: req.user.email,
           userId: req.user._id,
-          attendance:      parseFloat(attendance)      || 0,
-          studyHours:      parseFloat(studyHours)      || 0,
-          internalMarks:   parseFloat(internalMarks)   || 0,
-          prevMarks:       parseFloat(prevMarks)        || 0,
+          attendance: parseFloat(attendance) || 0,
+          studyHours: parseFloat(studyHours) || 0,
+          internalMarks: parseFloat(internalMarks) || 0,
+          prevMarks: parseFloat(prevMarks) || 0,
           assignmentScore: parseFloat(assignmentScore) || 0,
-          sleepHours:      parseFloat(sleepHours)      || 0,
-          participation:   parseInt(participation)     || 0,
-          testAvg:         parseFloat(testAvg)         || 0,
-          backlogs:        parseInt(backlogs)           || 0,
+          stream: stream || 'Science',
+          scienceType: stream === 'Science' ? (scienceType || 'Maths') : '',
+          physics: parseFloat(physics) || 0,
+          chemistry: parseFloat(chemistry) || 0,
+          maths: parseFloat(maths) || 0,
+          biology: parseFloat(biology) || 0,
+          accounts: parseFloat(accounts) || 0,
+          businessStudies: parseFloat(businessStudies) || 0,
+          economics: parseFloat(economics) || 0,
+          history: parseFloat(history) || 0,
+          politicalScience: parseFloat(politicalScience) || 0,
+          geography: parseFloat(geography) || 0,
+          participation: parseInt(participation) || 0,
+          testAvg: parseFloat(testAvg) || 0,
+          backlogs: parseInt(backlogs) || 0,
         }
       },
       { new: true, upsert: true, runValidators: true }
@@ -157,40 +191,63 @@ router.post('/submit-data', protect, authorize('student'), async (req, res) => {
 
     try {
       const mlRes = await axios.post(`${process.env.ML_SERVICE_URL}/predict`, {
-        attendance:       student.attendance,
-        study_hours:      student.studyHours,
-        internal_marks:   student.internalMarks,
-        prev_marks:       student.prevMarks,
+        attendance: student.attendance,
+        study_hours: student.studyHours,
+        internal_marks: student.internalMarks,
+        prev_marks: student.prevMarks,
         assignment_score: student.assignmentScore,
-        sleep_hours:      student.sleepHours,
-        participation:    student.participation,
-        test_avg:         student.testAvg,
-        backlogs:         student.backlogs
+        stream: student.stream,
+        science_type: student.scienceType || '',
+        physics: student.physics || 0,
+        chemistry: student.chemistry || 0,
+        maths: student.maths || 0,
+        biology: student.biology || 0,
+        accounts: student.accounts || 0,
+        business_studies: student.businessStudies || 0,
+        economics: student.economics || 0,
+        history: student.history || 0,
+        political_science: student.politicalScience || 0,
+        geography: student.geography || 0,
+        participation: student.participation,
+        test_avg: student.testAvg,
+        backlogs: student.backlogs
       });
 
       predictedMarks = mlRes.data.predicted_marks;
-      grade          = mlRes.data.grade;
-      modelUsed      = mlRes.data.model_used;
+      grade = mlRes.data.grade;
+      modelUsed = mlRes.data.model_used;
       recommendations = buildRecommendations(student, predictedMarks, grade);
 
       const Prediction = require('../models/Prediction');
       prediction = await Prediction.create({
-        studentId:      student._id,
+        studentId: student._id,
         predictedMarks,
         grade,
         modelUsed,
         features: {
-          attendance:      student.attendance,
-          studyHours:      student.studyHours,
-          internalMarks:   student.internalMarks,
-          prevMarks:       student.prevMarks,
+          attendance: student.attendance,
+          studyHours: student.studyHours,
+          internalMarks: student.internalMarks,
+          prevMarks: student.prevMarks,
           assignmentScore: student.assignmentScore,
-          sleepHours:      student.sleepHours,
-          participation:   student.participation,
-          testAvg:         student.testAvg,
-          backlogs:        student.backlogs
+          stream: student.stream,
+          scienceType: student.scienceType || '',
+          physics: student.physics || 0,
+          chemistry: student.chemistry || 0,
+          maths: student.maths || 0,
+          biology: student.biology || 0,
+          accounts: student.accounts || 0,
+          businessStudies: student.businessStudies || 0,
+          economics: student.economics || 0,
+          history: student.history || 0,
+          politicalScience: student.politicalScience || 0,
+          geography: student.geography || 0,
+          participation: student.participation,
+          testAvg: student.testAvg,
+          backlogs: student.backlogs
         },
-        recommendations
+        recommendations,
+        careerSuggestion: getCareerSuggestion(student.stream, student.scienceType)
       });
     } catch (mlErr) {
       console.log('ML prediction skipped:', mlErr.message);
@@ -198,25 +255,37 @@ router.post('/submit-data', protect, authorize('student'), async (req, res) => {
 
     // Always log a StudentSubmission history entry
     const submissionRecord = await StudentSubmission.create({
-      userId:        req.user._id,
-      studentName:   req.user.name,
-      studentEmail:  req.user.email,
-      studentDocId:  student._id,
+      userId: req.user._id,
+      studentName: req.user.name,
+      studentEmail: req.user.email,
+      studentDocId: student._id,
       features: {
-        attendance:      student.attendance,
-        studyHours:      student.studyHours,
-        internalMarks:   student.internalMarks,
-        prevMarks:       student.prevMarks,
+        attendance: student.attendance,
+        studyHours: student.studyHours,
+        internalMarks: student.internalMarks,
+        prevMarks: student.prevMarks,
         assignmentScore: student.assignmentScore,
-        sleepHours:      student.sleepHours,
-        participation:   student.participation,
-        testAvg:         student.testAvg,
-        backlogs:        student.backlogs
+        stream: student.stream,
+        scienceType: student.scienceType || '',
+        physics: student.physics || 0,
+        chemistry: student.chemistry || 0,
+        maths: student.maths || 0,
+        biology: student.biology || 0,
+        accounts: student.accounts || 0,
+        businessStudies: student.businessStudies || 0,
+        economics: student.economics || 0,
+        history: student.history || 0,
+        politicalScience: student.politicalScience || 0,
+        geography: student.geography || 0,
+        participation: student.participation,
+        testAvg: student.testAvg,
+        backlogs: student.backlogs
       },
       predictedMarks,
       grade,
       modelUsed,
       recommendations,
+      careerSuggestion: prediction ? getCareerSuggestion(student.stream, student.scienceType) : '',
       predictionId: prediction?._id || null
     });
 
@@ -254,20 +323,31 @@ router.post('/upload-csv', protect, authorize('teacher'), upload.single('file'),
           filter: { studentId: sid },
           update: {
             $set: {
-              studentId:       sid,
-              name:            row.name || `Student ${sid}`,
-              email:           row.email || '',
-              attendance:      parseFloat(row.attendance)       || 0,
-              studyHours:      parseFloat(row.study_hours)      || 0,
-              internalMarks:   parseFloat(row.internal_marks)   || 0,
-              prevMarks:       parseFloat(row.prev_marks)       || 0,
+              studentId: sid,
+              name: row.name || `Student ${sid}`,
+              email: row.email || '',
+              attendance: parseFloat(row.attendance) || 0,
+              studyHours: parseFloat(row.study_hours) || 0,
+              internalMarks: parseFloat(row.internal_marks) || 0,
+              prevMarks: parseFloat(row.prev_marks) || 0,
               assignmentScore: parseFloat(row.assignment_score) || 0,
-              sleepHours:      parseFloat(row.sleep_hours)      || 0,
-              participation:   parseFloat(row.participation)    || 0,
-              testAvg:         parseFloat(row.test_avg)         || 0,
-              backlogs:        parseInt(row.backlogs)           || 0,
-              finalMarks:      parseFloat(row.final_marks)      || null,
-              createdBy:       req.user._id
+              stream: row.stream || 'Science',
+              scienceType: row.science_type || '',
+              physics: parseFloat(row.physics) || 0,
+              chemistry: parseFloat(row.chemistry) || 0,
+              maths: parseFloat(row.maths) || 0,
+              biology: parseFloat(row.biology) || 0,
+              accounts: parseFloat(row.accounts) || 0,
+              businessStudies: parseFloat(row.business_studies) || 0,
+              economics: parseFloat(row.economics) || 0,
+              history: parseFloat(row.history) || 0,
+              politicalScience: parseFloat(row.political_science) || 0,
+              geography: parseFloat(row.geography) || 0,
+              participation: parseFloat(row.participation) || 0,
+              testAvg: parseFloat(row.test_avg) || 0,
+              backlogs: parseInt(row.backlogs) || 0,
+              finalMarks: parseFloat(row.final_marks) || null,
+              createdBy: req.user._id
             }
           },
           upsert: true
@@ -321,8 +401,8 @@ router.get('/', protect, async (req, res) => {
 
     if (search) {
       query.$or = [
-        { name:      { $regex: search, $options: 'i' } },
-        { email:     { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
         { studentId: { $regex: search, $options: 'i' } }
       ];
     }
@@ -415,6 +495,15 @@ router.delete('/:id', protect, authorize('teacher'), async (req, res) => {
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
+
+    // Cascade: remove all predictions linked to this student
+    const Prediction = require('../models/Prediction');
+    await Prediction.deleteMany({ studentId: req.params.id });
+
+    // Cascade: remove all submission history linked to this student document
+    const StudentSubmission = require('../models/StudentSubmission');
+    await StudentSubmission.deleteMany({ studentDocId: req.params.id });
+
     res.json({ success: true, message: 'Student deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -432,8 +521,6 @@ function buildRecommendations(student, predictedMarks, grade) {
     recs.push('📚 You are studying less than 2 hours per day. Try for at least 3–4 focused hours daily.');
   if (student.backlogs > 0)
     recs.push(`🔄 You have ${student.backlogs} backlog(s). Clearing them should be your top priority.`);
-  if (student.sleepHours < 6)
-    recs.push('😴 Less than 6 hours of sleep detected. Adequate rest (7–8 h) significantly improves memory.');
   if (student.internalMarks < 50)
     recs.push('📝 Internal marks are below 50. Participate more in class tests and internal assessments.');
   if (student.assignmentScore < 50)

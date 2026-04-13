@@ -28,14 +28,29 @@ const predictionSchema = new mongoose.Schema({
     internalMarks: Number,
     prevMarks: Number,
     assignmentScore: Number,
-    sleepHours: Number,
+    stream: String,
+    scienceType: String,
+    physics: Number,
+    chemistry: Number,
+    maths: Number,
+    biology: Number,
+    accounts: Number,
+    businessStudies: Number,
+    economics: Number,
+    history: Number,
+    politicalScience: Number,
+    geography: Number,
     participation: Number,
     testAvg: Number,
     backlogs: Number
   },
   recommendations: [{
     type: String
-  }]
+  }],
+  careerSuggestion: {
+    type: String,
+    default: ''
+  }
 }, { timestamps: true });
 
 // Index for efficient queries

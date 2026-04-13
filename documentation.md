@@ -69,7 +69,7 @@ The system utilizes a decoupled, microservices-inspired architecture spanning th
 The intelligence layer of the system operates dynamically, learning and scaling securely over newly uploaded institutional CSV data.
 
 ### 4.1 Feature Engineering & Preprocessing
-- **Features Analyzed**: `attendance`, `study_hours`, `internal_marks`, `prev_marks`, `assignment_score`, `sleep_hours`, `participation`, `test_avg`, `backlogs`.
+- **Features Analyzed**: `attendance`, `study_hours`, `internal_marks`, `prev_marks`, `assignment_score`, `stream`, `science_type`, `physics`, `chemistry`, `maths`, `biology`, `accounts`, `business_studies`, `economics`, `history`, `political_science`, `geography`, `participation`, `test_avg`, `backlogs`.
 - **Target Variable**: `final_marks` (0–100 mapped safely to A/B/C/Fail Grades).
 - **Missing Data Handling**: Numeric fields are defensively imputed using median strategies via `SimpleImputer`.
 - **Normalization**: `StandardScaler` standardizes features to a mean of 0 and variance of 1, preventing high-magnitude features (like marks) from skewing models.

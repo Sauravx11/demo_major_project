@@ -3,10 +3,12 @@
  */
 import axios from 'axios';
 
+// Use the production URL from Render, or fallback to local /api
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: { 'Content-Type': 'application/json' }
 });
+
 
 // Attach JWT token on every request
 API.interceptors.request.use((config) => {
@@ -68,6 +70,7 @@ export const getStudyHoursVsPerformance   = () => API.get('/analytics/study-hour
 export const getPerformanceDistribution   = () => API.get('/analytics/performance-distribution');
 export const getStudentPerformance        = (id) => API.get(`/analytics/student-performance/${id}`);
 export const getTopWeakStudents           = () => API.get('/analytics/top-weak-students');
+export const getAtRiskStudents            = () => API.get('/analytics/at-risk-students');
 export const getStudentOverview           = () => API.get('/analytics/student-overview');
 
 export default API;

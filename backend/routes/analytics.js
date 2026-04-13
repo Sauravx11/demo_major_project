@@ -114,6 +114,54 @@ router.get('/top-weak-students', protect, async (req, res) => {
 });
 
 /**
+ * GET /api/analytics/at-risk-students
+ * Returns detailed list of at-risk students (attendance < 60 OR backlogs >= 3)
+ * along with their latest prediction data (if available).
+ */
+router.get('/at-risk-students', protect, authorize('teacher'), async (req, res) => {
+  try {
+    // Same criteria used in /overview for atRiskCount
+    const atRiskStudents = await Student.find({
+      $or: [{ attendance: { $lt: 60 } }, { backlogs: { $gte: 3 } }]
+    }).select('name studentId email attendance backlogs studyHours').lean();
+
+    // Fetch latest prediction for each at-risk student
+    const studentIds = atRiskStudents.map(s => s._id);
+    const latestPredictions = await Prediction.aggregate([
+      { $match: { studentId: { $in: studentIds } } },
+      { $sort: { createdAt: -1 } },
+      { $group: {
+          _id: '$studentId',
+          predictedMarks: { $first: '$predictedMarks' },
+          grade: { $first: '$grade' }
+        }
+      }
+    ]);
+
+    // Build a map for quick lookup
+    const predMap = {};
+    for (const p of latestPredictions) {
+      predMap[p._id.toString()] = { predictedMarks: p.predictedMarks, grade: p.grade };
+    }
+
+    const result = atRiskStudents.map(s => ({
+      name: s.name,
+      studentId: s.studentId,
+      email: s.email,
+      attendance: s.attendance,
+      backlogs: s.backlogs,
+      studyHours: s.studyHours,
+      predictedMarks: predMap[s._id.toString()]?.predictedMarks || null,
+      grade: predMap[s._id.toString()]?.grade || null
+    }));
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
  * GET /api/analytics/student-overview
  * Personal stats for the logged-in student
  */
